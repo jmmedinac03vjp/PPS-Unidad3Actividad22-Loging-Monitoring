@@ -21,25 +21,17 @@ ErrorLog /var/log/apache2/error.log
 CustomLog /var/log/apache2/access.log combined
 LogLevel warn: Este parámetro define el nivel de detalle de los mensajes que Apache registra en los logs de error.
 ```
-Nivel			Descripción
-
-**emerg** 		Situaciones críticas que hacen que el servidor deje de funcionar.
-
-**alert**		Eventos graves que requieren atención inmediata.
-
-**crit**		Errores críticos en el servidor.
-
-**error**		Errores generales que no detienen el servidor.
-
-**warn**		Advertencias que pueden indicar problemas futuros. (Valor recomendado en producción)
-
-**notice**		Mensajes informativos importantes.
-
-**info**		Información detallada sobre la operación del servidor.
-
-**debug**		Información muy detallada para depuración.
-
-**trace1 - trace8** 	Nivel de depuración más detallado (usado para desarrolladores).
+|Nivel		        |Descripción
+|-----------------------|---------------------------------------------------------------------|
+|**emerg** 		|Situaciones críticas que hacen que el servidor deje de funcionar.|
+|**alert**		|Eventos graves que requieren atención inmediata.|
+|**crit**		|Errores críticos en el servidor.|
+|**error**		|Errores generales que no detienen el servidor.|
+|**warn**		|Advertencias que pueden indicar problemas futuros. (Valor recomendado en producción)|
+|**notice**		|Mensajes informativos importantes.|
+|**info**		|Información detallada sobre la operación del servidor.|
+|**debug**		|Información muy detallada para depuración.|
+|**trace1 - trace8** 	|Nivel de depuración más detallado (usado para desarrolladores).|
 
 
 Si se cambia `LogLevel warn` a `LogLevel debug`, Apache registrará más detalles útiles para diagnóstico, pero puede generar archivos de log muy grandes.
@@ -59,17 +51,13 @@ Esto enviaría los logs al sistema de logging de Linux.
 `CustomLog /var/log/apache2/access.log combined`
 
 
-Formato 	 	Descripción
-
-**combined**		Formato extendido con más información (IP, fecha, agente de usuario, etc.). (Recomendado)
-
-**common**		Formato básico sin detalles de referer ni agente de usuario.
-
-**vhost_combined** 	Similar a combined, pero muestra el VirtualHost asociado.
-
-**json**		Formato JSON estructurado.
-
-**custom**		Puedes definir tu propio formato personalizado.
+|Formato 	 	|Descripción
+|-----------------------|------------------------------------------------------------------------------------------|
+|**combined**		|Formato extendido con más información (IP, fecha, agente de usuario, etc.). (Recomendado)|
+|**common**		|Formato básico sin detalles de referer ni agente de usuario.|
+|**vhost_combined** 	|Similar a combined, pero muestra el VirtualHost asociado.|
+|**json**		|Formato JSON estructurado.|
+|**custom**		|Puedes definir tu propio formato personalizado.|
 
 
 Ejemplo de un log en formato `combined`:

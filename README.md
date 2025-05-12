@@ -255,8 +255,12 @@ Fail2Ban es una herramienta que monitorea los logs en busca de patrones sospecho
 
 **1. Instalación de Fail2Ban (Ubuntu/Debian)**
 
+En esta ocasión, vamos a instalar `fail2ban` en nuestra **máquina anfitriona** en vez de  en docker. De esta manera también podrá monitorizar las conexiones `ssh`. 
+
+maquina anfitrion `terminal`
 ```bash
-apt update && sudo apt install fail2ban -y
+sudo apt update
+sudo apt install fail2ban -y
 ```
 
 **2. Configurar Fail2Ban para Apache**
@@ -264,24 +268,25 @@ apt update && sudo apt install fail2ban -y
 Crear una copia del archivo de configuración predeterminado
 
 ```bash
-cp /etc/fail2ban/jail.conf /etc/fail2ban/jail.local
+sudo cp /etc/fail2ban/jail.conf /etc/fail2ban/jail.local
 ```
 
 Abrir el archivo de configuración:
 
 ```bash
-nano /etc/fail2ban/jail.local
+sudo nano /etc/fail2ban/jail.local
 ```
-Buscar [apache-auth] y añadir la siguiente configuración para proteger Apache:
+Buscar (ctrl+W) `apache-auth` y añadir la siguiente configuración para proteger Apache:
 
-```apache
+```fail2ban
 [apache-auth]
 enabled = true
 port = http,https
-logpath = /var/log/apache2/error.log
+logpath = /ruta-a docker-compose/docker-compose-lamp/logs/apache2/
 maxretry = 5
 bantime = 3600
 ```
+![](files/lm8.png)
 
 Esto bloqueará una IP por 1 hora si realiza más de 5 intentos fallidos.
 
@@ -290,7 +295,7 @@ Esto bloqueará una IP por 1 hora si realiza más de 5 intentos fallidos.
 **3. Reiniciar Fail2Ban para aplicar cambios**
 
 ```bash
-service fail2ban restart
+sudo service fail2ban restart
 sudo systemctl enable fail2ban
 ```
 
@@ -298,28 +303,28 @@ sudo systemctl enable fail2ban
 **4. Ver las IPs bloqueadas**
 
 ```bash
-fail2ban-client status apache-auth
+sudo fail2ban-client status apache-auth
 ```
 
 
 **5. Ver reglas de iptables creadas por Fail2Ban**
 
 ```bash
-iptables -L -n --line-numbers
+sudo iptables -L -n --line-numbers
 ```
 
 
 **6. Desbloquear una IP manualmente**
 
 ```bash
-fail2ban-client unban <IP>
+sudo fail2ban-client unban <IP>
 ```
 
 
 **7. Bloquear una IP manualmente**
 
 ```bash
-fail2ban-client set apache-auth banip <IP>
+sudo fail2ban-client set apache-auth banip <IP>
 ```
 
 **Ejercicio**
@@ -573,6 +578,18 @@ Si todo está configurado correctamente ir a la sección Analytics → Discover,
 
 
 ---
+
+## ⚠️   Volver a dejar todo "niquelao"
+
+Para eliminar los cambios que hemos realizado en esta actividad y volver a dejar todo en su sitio de partida:
+
+**En nuestro equipo anfitrión** 
+
+```bash
+sudo systemctl disable fail2ban
+sudo apt remove fail2ban
+sudo rm -rf /etc/fail2ban
+```
 
 ##Resumen
 

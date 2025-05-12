@@ -145,6 +145,7 @@ Detectar intentos de acceso a rutas sensibles como /admin:
 grep "admin" /var/log/apache2/other_vhosts_access.log
 ```
 
+![](files/lm3.png)
 
 **Buscar intentos de ejecución de comandos en la URL**
 
@@ -155,15 +156,16 @@ grep "cmd=" /var/log/apache2/other_vhosts_access.log
 
 ```
 
+![](files/lm4.png)
 
 **Buscar todas las peticiones de un usuario específico (IP)**
 
-Si se quiere revisar todas las solicitudes realizadas por una IP sospechosa (ej. 192.168.1.100):
+Si se quiere revisar todas las solicitudes realizadas por una IP sospechosa (ej. 172.20.0.5:
 
 ```bash
-grep "192.168.1.100" /var/log/apache2/other_vhosts_access.log
-
+grep "172.20.0.5" /var/log/apache2/other_vhosts_access.log
 ```
+![](files/lm5.png)
 
 
 **Buscar intentos de inyección SQL en la URL**
@@ -171,9 +173,10 @@ grep "192.168.1.100" /var/log/apache2/other_vhosts_access.log
 Analizar si hay consultas maliciosas en las peticiones:
 
 ```bash
-grep -E "SELECT|INSERT|UPDATE|DELETE|DROP|UNION" /var/log/apache2/other_vhosts_access.log
+grep -E "SELECT|INSERT|UPDATE|DELETE|DROP|UNION" /var/log/apache2/error.log
 
 ```
+![](files/lm6.png)
 
 **Ver errores HTTP 404 (páginas no encontradas)**
 
@@ -212,6 +215,10 @@ awk '{print $1}' /var/log/apache2/other_vhosts_access.log | sort | uniq -c | sor
 ```
 
 Esto mostrará las 10 IPs con más solicitudes.
+
+grep "192.168.1.100" /var/log/apache2/other_vhosts_access.log
+
+![](files/lm7.png)
 
 
 **Buscar User-Agents sospechosos**

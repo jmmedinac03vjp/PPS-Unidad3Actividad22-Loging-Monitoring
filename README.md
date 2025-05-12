@@ -44,7 +44,7 @@ LogLevel warn
 ErrorLog /var/log/apache2/error.log
 # Ubicación y formato de registro de solicitudes
 
-CustomLog /var/log/apache2/access.log combined
+CustomLog /var/log/apache2/other_vhosts_access.log combined
 ```
 
 ### Explicación de las diferentes directavas
@@ -80,9 +80,9 @@ Si se cambia `LogLevel warn` a `LogLevel debug`, Apache registrará más detalle
 
 `ErrorLog "|/usr/bin/logger -t apache_error"` enviaría los logs al sistema de logging de Linux.
 
-**CustomLog ${APACHE_LOG_DIR}/access.log combined**
+**CustomLog ${APACHE_LOG_DIR}/other_vhosts_access.log combined**
 
-`CustomLog /var/log/apache2/access.log combined`  define la ubicación y el formato del archivo donde se registran las solicitudes de acceso al servidor.
+`CustomLog /var/log/apache2/other_vhosts_access.log combined`  define la ubicación y el formato del archivo donde se registran las solicitudes de acceso al servidor.
 
 Puede tomar uno de los siguientes valores:
 
@@ -99,9 +99,11 @@ Ejemplo de un log en formato `combined`:
 
 `192.168.1.10 - - [28/Feb/2025:12:34:56 +0000] "GET /index.html HTTP/1.1" 200 1024 "https://ejemplo.com" "Mozilla/5.0"`
 
+![](files/lm2.png)
+
 Ejemplo de un log en formato `json`:
 
-`CustomLog /var/log/apache2/access.log "{ \"ip\": \"%h\", \"time\": \"%t\", \"request\": \"%r\", \"status\": %>s, \"size\": %b }" json`
+`CustomLog /var/log/apache2/other_vhosts_access.log "{ \"ip\": \"%h\", \"time\": \"%t\", \"request\": \"%r\", \"status\": %>s, \"size\": %b }" json`
 
 Salida:
 
@@ -113,22 +115,17 @@ Reiniciar el servidor web cada vez que se modifique la configuración:
 ```bash
 service apache2 restart
 ```
-![](files/lm1.png)
-![](files/lm1.png)
-![](files/lm1.png)
-![](files/lm1.png)
-![](files/lm1.png)
 
 ---
 
 # 3. Detectar intentos de ataque en los logs
 
+Como estamos trabajando con un escenario multicontenedor docker, hay algunas peculiaridades. Por ejemplo, parte de los logs se guardan en el archivo `other_vhosts_access.log` en vez de `access.log`. Si las consultas no dan resultados prueba con `access.log`.
+
 **Monitorear logs en tiempo real con `tail -f`:*
 
 ```bash
-tail -f /var/log/apache2/access.log
-```
-```bash
+tail -f /var/log/apache2/other_vhosts_access.log
 tail -n 50 /var/log/apache2/error.log
 ```
 **Mostrar los logs con paginación (para leer cómodamente)**
@@ -136,7 +133,7 @@ tail -n 50 /var/log/apache2/error.log
 Si el archivo es muy grande less o more:
 
 ```bash
-less /var/log/apache2/access.log
+less /var/log/apache2/other_vhosts_access.log
 ```
 
 
@@ -145,7 +142,7 @@ less /var/log/apache2/access.log
 Detectar intentos de acceso a rutas sensibles como /admin:
 
 ```bash
-grep "admin" /var/log/apache2/access.log
+grep "admin" /var/log/apache2/other_vhosts_access.log
 ```
 
 
@@ -154,7 +151,7 @@ grep "admin" /var/log/apache2/access.log
 Detectar posibles ataques de inyección de comandos:
 
 ```bash
-grep "cmd=" /var/log/apache2/access.log
+grep "cmd=" /var/log/apache2/other_vhosts_access.log
 
 ```
 
@@ -164,7 +161,7 @@ grep "cmd=" /var/log/apache2/access.log
 Si se quiere revisar todas las solicitudes realizadas por una IP sospechosa (ej. 192.168.1.100):
 
 ```bash
-grep "192.168.1.100" /var/log/apache2/access.log
+grep "192.168.1.100" /var/log/apache2/other_vhosts_access.log
 
 ```
 
@@ -174,7 +171,7 @@ grep "192.168.1.100" /var/log/apache2/access.log
 Analizar si hay consultas maliciosas en las peticiones:
 
 ```bash
-grep -E "SELECT|INSERT|UPDATE|DELETE|DROP|UNION" /var/log/apache2/access.log
+grep -E "SELECT|INSERT|UPDATE|DELETE|DROP|UNION" /var/log/apache2/other_vhosts_access.log
 
 ```
 
@@ -183,7 +180,7 @@ grep -E "SELECT|INSERT|UPDATE|DELETE|DROP|UNION" /var/log/apache2/access.log
 Útil para detectar accesos a rutas inexistentes (posible escaneo de vulnerabilidades):
 
 ```bash
-grep " 404 " /var/log/apache2/access.log
+grep " 404 " /var/log/apache2/other_vhosts_access.log
 
 ```
 
@@ -193,7 +190,7 @@ grep " 404 " /var/log/apache2/access.log
 Ejemplo: Ver accesos del 28 de febrero de 2025:
 
 ```bash
-grep "28/Feb/2025" /var/log/apache2/access.log
+grep "28/Feb/2025" /var/log/apache2/other_vhosts_access.log
 
 ```
 
@@ -202,7 +199,7 @@ grep "28/Feb/2025" /var/log/apache2/access.log
 Ver intentos de acceso fallidos en /login:
 
 ```bash
-grep "/login" /var/log/apache2/access.log | grep " 401 "
+grep "/login" /var/log/apache2/other_vhosts_access.log | grep " 401 "
 ```
 
 
@@ -211,7 +208,7 @@ grep "/login" /var/log/apache2/access.log | grep " 401 "
 Para ver si una IP está haciendo muchas peticiones sospechosas:
 
 ```bash
-awk '{print $1}' /var/log/apache2/access.log | sort | uniq -c | sort -nr | head -10
+awk '{print $1}' /var/log/apache2/other_vhosts_access.log | sort | uniq -c | sort -nr | head -10
 ```
 
 Esto mostrará las 10 IPs con más solicitudes.
@@ -222,7 +219,7 @@ Esto mostrará las 10 IPs con más solicitudes.
 Identificar bots o scrapers accediendo al servidor:
 
 ```bash
-grep -E "bot|crawler|spider" /var/log/apache2/access.log
+grep -E "bot|crawler|spider" /var/log/apache2/other_vhosts_access.log
 ```
 
 
@@ -231,7 +228,7 @@ grep -E "bot|crawler|spider" /var/log/apache2/access.log
 Monitorear en vivo cualquier intento de acceso a /wp-admin (Página de administración de WordPress por defecto):
 
 ```bash
-tail -f /var/log/apache2/access.log | grep "wp-admin"
+tail -f /var/log/apache2/other_vhosts_access.log | grep "wp-admin"
 ```
 
 ---
@@ -433,7 +430,7 @@ Añadir la configuración para procesar logs de Apache
 ```
 input {
 	file {
-		path => "/var/log/apache2/access.log"
+		path => "/var/log/apache2/other_vhosts_access.log"
 		start_position => "beginning"
 		sincedb_path => "/dev/null"
 	}
@@ -529,7 +526,7 @@ Cambia enabled: false a enabled: true en ambas secciones y añade las var.paths:
 ```
 access:
 	enabled: true
-	var.paths: ["/var/log/apache2/access.log*"]
+	var.paths: ["/var/log/apache2/other_vhosts_access.log*"]
 error:
 	enabled: true
 	var.paths: ["/var/log/apache2/error.log*"]

@@ -8,19 +8,54 @@ Tema: Registro y monitoreo de eventos de seguridad
 
 ---
 
-## 1. ¿Qué es Logging & Monitoring?
+# 1. ¿Qué es Logging & Monitoring?
 
 Es el proceso de registrar y analizar eventos de seguridad en servidores y aplicaciones para detectar y responder a amenazas.
 
-## 2. Configurar logs de eventos en Apache
+## Iniciar entorno de pruebas
+
+-Situáte en la carpeta de del entorno de pruebas de nuestro servidor LAMP e inicia el escenario docker-compose
+
+~~~
+docker-compose up -d
+~~~
+
+Para asegurarnos que no tenemos ninguna seguridad implementada descarga tus archivos de configuración:
+
+- Archivo de configuración de `Apache`[/etc/apache2/apache2.conf](files/apache2.conf.minimo)
+
+- Archivo de configuración de `PHP`. Nosotros al estar utilizando un escenario multicontenedor lo tenemos en [/usr/local/etc/php/php.ini](files/php.ini).
+
+- Archivo de configuración del sitio virtual `Apache`. [/etc/apache2/sites-available/000-default.conf.](files/000-default.conf)
+
+
+En el [último punto de esta sección](#IMPORTANTE-Solucion-problemas-que-puedan-surgir.) , puedes encontrar la solución a problemas que te pueden surgir durante la realización del ejercicio, relacionado con los cambios en las configuraciones, por lo que puedes echarle un ojo antes de empezar.
+
+---
+
+# 2. Configurar logs de eventos en Apache
 
 archivo `/etc/apache2/apache2.conf`
 ```apache
+# Nivel de segurdad elegimos
 LogLevel warn
+
+# Dirección donde queremos que guarde los logs apache2
 ErrorLog /var/log/apache2/error.log
+# Ubicación y formato de registro de solicitudes
+
 CustomLog /var/log/apache2/access.log combined
-LogLevel warn: Este parámetro define el nivel de detalle de los mensajes que Apache registra en los logs de error.
 ```
+
+### Explicación de las diferentes directavas
+
+![](files/lm1.png)
+- **LogLevel**
+
+`LogLevel warn` define el nivel de detalle de los mensajes que Apache registra en los logs de error.
+
+El valor de seguridad `LogLevel` puede tomar uno de estos valores:
+
 |Nivel		        |Descripción
 |-----------------------|---------------------------------------------------------------------|
 |**emerg** 		|Situaciones críticas que hacen que el servidor deje de funcionar.|
@@ -36,20 +71,20 @@ LogLevel warn: Este parámetro define el nivel de detalle de los mensajes que Ap
 
 Si se cambia `LogLevel warn` a `LogLevel debug`, Apache registrará más detalles útiles para diagnóstico, pero puede generar archivos de log muy grandes.
 
-**ErrorLog ${APACHE_LOG_DIR}/error.log**: Define la ubicación donde Apache guarda los logs de errores.
+- **ErrorLog ${APACHE_LOG_DIR}/error.log**
 
-`ErrorLog /var/log/apache2/error.log`
+ `ErrorLog ${APACHE_LOG_DIR}/error.log` define la ubicación donde Apache guarda los logs de errores.
+
 
 **Posibilidades adicionales**: Se puede redirigir los logs de error a un archivo específico o incluso a `syslog`:
 
-`ErrorLog "|/usr/bin/logger -t apache_error"`
+`ErrorLog "|/usr/bin/logger -t apache_error"` enviaría los logs al sistema de logging de Linux.
 
-Esto enviaría los logs al sistema de logging de Linux.
+**CustomLog ${APACHE_LOG_DIR}/access.log combined**
 
-**CustomLog ${APACHE_LOG_DIR}/access.log combined**: Define la ubicación y el formato del archivo donde se registran las solicitudes de acceso al servidor.
+`CustomLog /var/log/apache2/access.log combined`  define la ubicación y el formato del archivo donde se registran las solicitudes de acceso al servidor.
 
-`CustomLog /var/log/apache2/access.log combined`
-
+Puede tomar uno de los siguientes valores:
 
 |Formato 	 	|Descripción
 |-----------------------|------------------------------------------------------------------------------------------|
@@ -72,15 +107,21 @@ Salida:
 
 `{ "ip": "192.168.1.10", "time": "[28/Feb/2025:12:34:56 +0000]", "request": "GET /index.html HTTP/1.1", "status": 200, "size": 1024 }`
 
+
 Reiniciar el servidor web cada vez que se modifique la configuración:
 
 ```bash
 service apache2 restart
 ```
+![](files/lm1.png)
+![](files/lm1.png)
+![](files/lm1.png)
+![](files/lm1.png)
+![](files/lm1.png)
 
 ---
 
-## 2. Detectar intentos de ataque en los logs
+# 3. Detectar intentos de ataque en los logs
 
 **Monitorear logs en tiempo real con `tail -f`:*
 
@@ -195,12 +236,12 @@ tail -f /var/log/apache2/access.log | grep "wp-admin"
 
 ---
 
-## 3. Mitigación y Mejores Prácticas
+# 4. Mitigación y Mejores Prácticas
 
 Implementar medidas de seguridad adecuadas puede ayudar a prevenir ataques y mejorar la respuesta ante incidentes.
 
 
-### 3.1. Configurar alertas automáticas con Fail2Ban
+## 4.1. Configurar alertas automáticas con Fail2Ban
 
 
 **¿Qué es Fail2Ban?**
@@ -284,9 +325,9 @@ Probar a bloquear una IP (9.9.9.9), revisar las reglas iptables creadas, así co
 
 ---
 
-## 4. Usar herramientas de SIEM (Security Information and Event Management)
+# 5. Usar herramientas de SIEM (Security Information and Event Management)
 
-### ¿Qué es un SIEM?
+## ¿Qué es un SIEM?
 
 Un SIEM recopila, analiza y correlaciona eventos de seguridad desde múltiples fuentes, incluyendo logs de Apache, bases de datos y firewall, permitiendo una mejor detección de amenazas.
 
@@ -303,7 +344,7 @@ Un SIEM recopila, analiza y correlaciona eventos de seguridad desde múltiples f
 **Graylog**						Alternativa de código abierto con buenas capacidades de análisis.
 
 
-### Configurar ELK Stack para Apache**
+## Configurar ELK Stack para Apache**
 
 ELK Stack (Elasticsearch, Logstash, Kibana) es una solución poderosa para monitoreo y análisis de logs en tiempo real. Integrarlo con Apache permite visualizar métricas de tráfico, detectar anomalías y mejorar la seguridad.
 
@@ -516,7 +557,7 @@ Si todo está configurado correctamente ir a la sección Analytics → Discover,
 
 ---
 
-## 5. ELK + Filebeat
+# 6. ELK + Filebeat
 
 - Elasticsearch: Almacena y permite buscar logs de Apache
 

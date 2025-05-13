@@ -728,9 +728,10 @@ hosts: ["localhost:9200"]
 ```bash
 sudo systemctl restart filebeat
 ```
-Editar el archivo de configuración del módulo Apache:
+Hacer copia del original y editar el archivo de configuración del módulo Apache:
 
 ```bash
+sudo cp /etc/filebeat/modules.d/apache.yml /etc/filebeat/modules.d/apache-yml-original
 sudo nano /etc/filebeat/modules.d/apache.yml
 ```
 
@@ -746,16 +747,18 @@ error:
 	#var.paths: ["/var/log/apache2/error.log*"]
 	var.paths: ["/ruta/a/carpeta/logs/logs/apache2/error.log*"]
 ```
+![](images/lm15.png)
+
 Configurar Filebeat para recolectar logs de Apache
 
 ```bash
-filebeat setup
+sudo filebeat setup
 ```
 
 Verificar que Filebeat está enviando logs
 
 ```bash
-filebeat test output
+sudo filebeat test output
 ```
 
 **8. Verificar que los logs de Apache están en Kibana**
@@ -764,8 +767,13 @@ Acceder a Kibana desde el navegador: `http://localhost:5601`
 
 En el menú lateral “Management” seleccionar "Stack Management" → "Data Views".
 
-Si todo está configurado correctamente ir a la sección Analytics → Discover, buscar el índice filebeat-* y se debería ver los logs en tiempo real.
+![](images/lm16.png)
 
+![](images/lm17.png)
+
+Si todo está configurado correctamente ir a la sección **Analytics → Discover**, buscar el índice filebeat-* y se debería ver los logs en tiempo real.
+
+![](images/lm18.png)
 
 ---
 

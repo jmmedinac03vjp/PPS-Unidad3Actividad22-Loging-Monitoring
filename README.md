@@ -516,14 +516,14 @@ Probar a bloquear una IP (9.9.9.9), revisar las reglas iptables creadas, así co
 Un SIEM recopila, analiza y correlaciona eventos de seguridad desde múltiples fuentes, incluyendo logs de Apache, bases de datos y firewall, permitiendo una mejor detección de amenazas.
 
 
-| **SIEM Populares** |
+ **SIEM Populares** 
 |-------------------------------------------------------|-------------------------------------------------------------------------|
 | **Herramienta**					|**Descripción**                                                          |
 |-------------------------------------------------------|-------------------------------------------------------------------------|
 |**ELK Stack** (Elasticsearch, Logstash, Kibana) 	|Sistema Open Source para recolectar y visualizar logs. Ideal para Apache.|
-|**Splunk**						|Potente solución comercial para análisis de eventos de seguridad.|
-|**Wazuh**						|SIEM gratuito basado en OSSEC con integración en Elasticsearch.|
-|**Graylog**						|Alternativa de código abierto con buenas capacidades de análisis.|
+|**Splunk**						|Potente solución comercial para análisis de eventos de seguridad.        |
+|**Wazuh**						|SIEM gratuito basado en OSSEC con integración en Elasticsearch.          |
+|**Graylog**						|Alternativa de código abierto con buenas capacidades de análisis.        |
 
 
 ---

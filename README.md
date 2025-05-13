@@ -49,7 +49,7 @@ CustomLog /var/log/apache2/other_vhosts_access.log combined
 
 ### Explicación de las diferentes directavas
 
-![](files/lm1.png)
+![](images/lm1.png)
 - **LogLevel**
 
 `LogLevel warn` define el nivel de detalle de los mensajes que Apache registra en los logs de error.
@@ -99,7 +99,7 @@ Ejemplo de un log en formato `combined`:
 
 `192.168.1.10 - - [28/Feb/2025:12:34:56 +0000] "GET /index.html HTTP/1.1" 200 1024 "https://ejemplo.com" "Mozilla/5.0"`
 
-![](files/lm2.png)
+![](images/lm2.png)
 
 Ejemplo de un log en formato `json`:
 
@@ -145,7 +145,7 @@ Detectar intentos de acceso a rutas sensibles como /admin:
 grep "admin" /var/log/apache2/other_vhosts_access.log
 ```
 
-![](files/lm3.png)
+![](images/lm3.png)
 
 **Buscar intentos de ejecución de comandos en la URL**
 
@@ -156,7 +156,7 @@ grep "cmd=" /var/log/apache2/other_vhosts_access.log
 
 ```
 
-![](files/lm4.png)
+![](images/lm4.png)
 
 **Buscar todas las peticiones de un usuario específico (IP)**
 
@@ -165,7 +165,7 @@ Si se quiere revisar todas las solicitudes realizadas por una IP sospechosa (ej.
 ```bash
 grep "172.20.0.5" /var/log/apache2/other_vhosts_access.log
 ```
-![](files/lm5.png)
+![](images/lm5.png)
 
 
 **Buscar intentos de inyección SQL en la URL**
@@ -176,7 +176,7 @@ Analizar si hay consultas maliciosas en las peticiones:
 grep -E "SELECT|INSERT|UPDATE|DELETE|DROP|UNION" /var/log/apache2/error.log
 
 ```
-![](files/lm6.png)
+![](images/lm6.png)
 
 **Ver errores HTTP 404 (páginas no encontradas)**
 
@@ -218,7 +218,7 @@ Esto mostrará las 10 IPs con más solicitudes.
 
 grep "192.168.1.100" /var/log/apache2/other_vhosts_access.log
 
-![](files/lm7.png)
+![](images/lm7.png)
 
 
 **Buscar User-Agents sospechosos**
@@ -253,7 +253,7 @@ Implementar medidas de seguridad adecuadas puede ayudar a prevenir ataques y mej
 Fail2Ban es una herramienta que monitorea los logs en busca de patrones sospechosos (como múltiples intentos fallidos de login) y bloquea automáticamente la IP atacante mediante reglas de firewall.
 
 
-**1. Instalación de Fail2Ban (Ubuntu/Debian)**
+###. Instalación de Fail2Ban (Ubuntu/Debian) en maquina anfitriona**
 
 En esta ocasión, vamos a instalar `fail2ban` en nuestra **máquina anfitriona** en vez de  en docker. De esta manera también podrá monitorizar las conexiones `ssh`. 
 
@@ -282,11 +282,11 @@ Buscar (ctrl+W) `apache-auth` y añadir la siguiente configuración para protege
 [apache-auth]
 enabled = true
 port = http,https
-logpath = /ruta-a docker-compose/docker-compose-lamp/logs/apache2/
+logpath = /ruta-a docker-compose/docker-compose-lamp/logs/apache2/error.log
 maxretry = 5
 bantime = 3600
 ```
-![](files/lm8.png)
+![](images/lm8.png)
 
 Esto bloqueará una IP por 1 hora si realiza más de 5 intentos fallidos.
 
@@ -300,28 +300,210 @@ sudo systemctl enable fail2ban
 ```
 
 
-**4. Ver las IPs bloqueadas**
+### Configuración de Fail2Ban en un entorno LAMP con Docker
+
+Este documento describe cómo integrar **Fail2Ban** como un contenedor independiente dentro de un entorno **LAMP** desplegado con Docker Compose. Se utilizará la imagen oficial `linuxserver/fail2ban` y se conectará con los logs de Apache, MySQL, etc.
+
+---
+
+** 1. Requisitos previos**
+
+* Docker y Docker Compose instalados.
+* Estructura típica de proyecto LAMP en directorios:
+
+  * `./logs/apache2`
+  * `./logs/mysql`
+  * `./logs/xdebug`
+  * `./config/fail2ban/` (donde guardaremos la configuración de Fail2Ban)
+
+---
+
+** 2. `docker-compose.yml`**
+
+```yaml
+version: "3"
+
+services:
+  webserver:
+    build:
+      context: ./bin/${PHPVERSION}
+    container_name: "${COMPOSE_PROJECT_NAME}-${PHPVERSION}"
+    ports:
+      - "${HOST_MACHINE_UNSECURE_HOST_PORT}:80"
+      - "${HOST_MACHINE_SECURE_HOST_PORT}:443"
+    links:
+      - database
+    volumes:
+      - ${DOCUMENT_ROOT-./www}:/var/www/html:rw
+      - ${PHP_INI-./config/php/php.ini}:/usr/local/etc/php/php.ini
+      - ${SSL_DIR-./config/ssl}:/etc/apache2/ssl/
+      - ${VHOSTS_DIR-./config/vhosts}:/etc/apache2/sites-enabled
+      - ${LOG_DIR-./logs/apache2}:/var/log/apache2
+      - ${XDEBUG_LOG_DIR-./logs/xdebug}:/var/log/xdebug
+      - /etc/localtime:/etc/localtime:ro
+      - /etc/timezone:/etc/timezone:ro
+    environment:
+      APACHE_DOCUMENT_ROOT: ${APACHE_DOCUMENT_ROOT-/var/www/html}
+      PMA_PORT: ${HOST_MACHINE_PMA_PORT}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      HOST_MACHINE_MYSQL_PORT: ${HOST_MACHINE_MYSQL_PORT}
+      XDEBUG_CONFIG: "client_host=host.docker.internal remote_port=${XDEBUG_PORT}"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  database:
+    build:
+      context: "./bin/${DATABASE}"
+    container_name: "${COMPOSE_PROJECT_NAME}-${DATABASE}"
+    ports:
+      - "127.0.0.1:${HOST_MACHINE_MYSQL_PORT}:3306"
+    volumes:
+      - ${MYSQL_INITDB_DIR-./config/initdb}:/docker-entrypoint-initdb.d
+      - ${MYSQL_DATA_DIR-./data/mysql}:/var/lib/mysql
+      - ${MYSQL_LOG_DIR-./logs/mysql}:/var/log/mysql
+      - /etc/localtime:/etc/localtime:ro
+      - /etc/timezone:/etc/timezone:ro
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+
+  phpmyadmin:
+    image: phpmyadmin
+    container_name: "${COMPOSE_PROJECT_NAME}-phpmyadmin"
+    links:
+      - database
+    environment:
+      PMA_HOST: database
+      PMA_PORT: 3306
+      PMA_USER: root
+      PMA_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      UPLOAD_LIMIT: ${UPLOAD_LIMIT}
+      MEMORY_LIMIT: ${MEMORY_LIMIT}
+    ports:
+      - "${HOST_MACHINE_PMA_PORT}:80"
+      - "${HOST_MACHINE_PMA_SECURE_PORT}:443"
+    volumes:
+      - /sessions
+      - ${PHP_INI-./config/php/php.ini}:/usr/local/etc/php/conf.d/php-phpmyadmin.ini
+
+  redis:
+    container_name: "${COMPOSE_PROJECT_NAME}-redis"
+    image: redis:latest
+    ports:
+      - "127.0.0.1:${HOST_MACHINE_REDIS_PORT}:6379"
+
+  fail2ban:
+    image: linuxserver/fail2ban
+    container_name: "${COMPOSE_PROJECT_NAME}-fail2ban"
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+    environment:
+      PUID: 1000
+      PGID: 1000
+      TZ: Europe/Madrid
+    volumes:
+      - ./logs/apache2:/apache_logs:ro
+      - ./config/fail2ban:/config
+    network_mode: "host"
+```
+
+---
+
+** 3. Configuración de Fail2Ban**
+
+ - `config/fail2ban/jail.local`
+
+```ini
+[DEFAULT]
+dbfile = /config/fail2ban.db
+loglevel = INFO
+
+[apache-auth]
+enabled = true
+port = http,https
+filter = apache-auth
+logpath = /apache_logs/*.log
+maxretry = 3
+bantime = 600
+findtime = 600
+```
+
+-  `config/fail2ban/filter.d/apache-auth.conf`
+
+```ini
+[Definition]
+failregex = ^%(_apache_error_client)s user .* authentication failure.*$
+ignoreregex =
+```
+
+> Puedes personalizar más filtros desde la documentación de Fail2Ban o adaptar los ya existentes en `/etc/fail2ban/filter.d/`.
+
+---
+
+** 4. Instrucciones de uso**
+
+1. Crea las carpetas necesarias si no existen:
+
+```bash
+mkdir -p logs/apache2 logs/mysql logs/xdebug config/fail2ban/config.d config/fail2ban/filter.d
+```
+
+2. Crea los archivos `jail.local` y `apache-auth.conf` como se muestra arriba.
+
+3. Ejecuta:
+
+```bash
+docker-compose up -d
+```
+
+4. Revisa el log de Fail2Ban:
+
+```bash
+docker logs -f <nombre_contenedor_fail2ban>
+```
+
+---
+
+** 5. Resultado esperado**
+
+Fail2Ban monitoreará los logs de Apache y aplicará bans (bloqueos) a IPs que generen repetidos intentos fallidos de autenticación.
+
+---
+
+
+### Funcionamiento fail2ban
+
+** Ver las IPs bloqueadas**
 
 ```bash
 sudo fail2ban-client status apache-auth
 ```
 
 
-**5. Ver reglas de iptables creadas por Fail2Ban**
+**Ver reglas de iptables creadas por Fail2Ban**
 
 ```bash
 sudo iptables -L -n --line-numbers
 ```
 
 
-**6. Desbloquear una IP manualmente**
+**Desbloquear una IP manualmente**
 
 ```bash
 sudo fail2ban-client unban <IP>
 ```
 
 
-**7. Bloquear una IP manualmente**
+**Bloquear una IP manualmente**
 
 ```bash
 sudo fail2ban-client set apache-auth banip <IP>
@@ -341,17 +523,15 @@ Probar a bloquear una IP (9.9.9.9), revisar las reglas iptables creadas, así co
 Un SIEM recopila, analiza y correlaciona eventos de seguridad desde múltiples fuentes, incluyendo logs de Apache, bases de datos y firewall, permitiendo una mejor detección de amenazas.
 
 
-**SIEM Populares**
-
-**Herramienta**					**Descripción**
-
-**ELK Stack** (Elasticsearch, Logstash, Kibana) 	Sistema Open Source para recolectar y visualizar logs. Ideal para Apache.
-
-**Splunk**						Potente solución comercial para análisis de eventos de seguridad.
-
-**Wazuh**						SIEM gratuito basado en OSSEC con integración en Elasticsearch.
-**Graylog**						Alternativa de código abierto con buenas capacidades de análisis.
-
+| **SIEM Populares** |
+|-------------------------------------------------------|----------------------------------------------------------------------------------|
+| **Herramienta**					|**Descripción**
+|-------------------------------------------------------|-----------------------------------------------------------------------------------|
+|**ELK Stack** (Elasticsearch, Logstash, Kibana) 	|Sistema Open Source para recolectar y visualizar logs. Ideal para Apache.|
+|**Splunk**						|Potente solución comercial para análisis de eventos de seguridad.|
+|**Wazuh**						|SIEM gratuito basado en OSSEC con integración en Elasticsearch.|
+|**Graylog**						|Alternativa de código abierto con buenas capacidades de análisis.|
+|--------------------------------------------------------|---------------------------------------------------------------------------------------|
 
 ## Configurar ELK Stack para Apache**
 
@@ -364,38 +544,43 @@ ELK Stack (Elasticsearch, Logstash, Kibana) es una solución poderosa para monit
 
 - **Kibana**: Proporciona dashboards interactivos para visualizar logs y métricas de Apache.
 
+Ya que vamos a hacer un ejercicio rápido, lo vamos a instalar en nuestra máquina anfitriona. En producción, lo crearíamos en docker con una máquina para cada servicio.
 
 **1. Agregar el repositorio de Elastic**
 
 Ejecutar los siguientes comandos:
 
 ```bash
-curl -fsSL https://artifacts.elastic.co/GPG-KEY-elasticsearch | sudo gpg --dearmor -o /usr/share/keyrings/elastic-keyring.gpg
-echo "deb [signed-by=/usr/share/keyrings/elastic-keyring.gpg] https://artifacts.elastic.co/packages/8.x/apt stable main" | sudo tee /etc/apt/sources.list.d/elastic-8.x.list
+wget -qO - https://artifacts.elastic.co/GPG-KEY-elasticsearch | sudo gpg --dearmor -o /usr/share/keyrings/elasticsearch-keyring.gpg
+sudo apt-get install apt-transport-https
+echo "deb [signed-by=/usr/share/keyrings/elasticsearch-keyring.gpg] https://artifacts.elastic.co/packages/9.x/apt stable main" | sudo tee /etc/apt/sources.list.d/elastic-9.x.list
 ```
 
-Nota: Si se desea una versión específica, cambiar 8.x por la versión deseada.
+Nota: Si se desea una versión específica, cambiar 9.x por la versión deseada.
 
 
 **2. Actualizar los repositorios e instalar Elasticsearch, Logstash y Kibana**
 
 ```bash
-apt update
-apt install elasticsearch logstash kibana -y
+sudo apt update
+sudo apt install elasticsearch logstash kibana -y
 ```
 
 **3. Iniciar y habilitar los servicios**
 
+Como estamos en docker, iniciamos los servicios para probar. Tendríamos que habilitarlos para que en el arranque lo hagan automáticamente.
 ```bash
 systemctl enable --now elasticsearch logstash kibana
+
 ```
 
 **4. Configurar Elasticsearch**
 
-Editar configuración de Elasticsearch
+Guardamos una copia del archivo de configuración de Elasticsearch y editamos:
 
 ```bash
-nano /etc/elasticsearch/elasticsearch.yml
+sudo cp /etc/elasticsearch/elasticsearch.yml /etc/elasticsearch/elasticsearch-yml-original
+sudo nano /etc/elasticsearch/elasticsearch.yml
 ```
 
 Modificar el fichero y lo dejamos como a continuación:
@@ -428,13 +613,15 @@ curl -X GET "http://localhost:9200"
 
 Si funciona correctamente, se debería ver una respuesta con información del servidor.
 
+![](images/lm9.png)
+
 
 **5. Configurar Logstash para Apache**
 
 Crear un archivo de configuración en Logstash
 
 ```bash
-nano /etc/logstash/conf.d/apache.conf
+sudo nano /etc/logstash/conf.d/apache.conf
 ```
 
 Añadir la configuración para procesar logs de Apache
@@ -464,21 +651,24 @@ output {
 Reiniciar Logstash
 
 ```bash
-systemctl restart logstash
+sudo systemctl restart logstash
 ```
 
 Verificar que Logstash está procesando los logs
 
 ```bash
-journalctl -u logstash --no-pager | tail -n 20
+sudo journalctl -u logstash --no-pager | tail -n 20
 ```
+Nos mostrará los logs de logstash
+
+![](images/lm10.png)
 
 **6. Configurar Kibana**
 
 Editar la configuración de Kibana
 
 ```bash
-nano /etc/kibana/kibana.yml
+sudo nano /etc/kibana/kibana.yml
 ```
 
 Activar las siguientes líneas
@@ -488,60 +678,73 @@ server.port: 5601
 server.host: "0.0.0.0" # Permite acceso remoto (opcional)
 elasticsearch.hosts: ["http://localhost:9200"]
 ```
+![](images/lm11.png)
 
 Reiniciar Kibana
 
 ```bash
-systemctl restart kibana
+sudo systemctl restart kibana
 ```
 
 Acceder a Kibana desde el navegador: `http://localhost:5601`
 
+![](images/lm12.png)
+
+Al darle al enlace de "Explore my own" accedemos a nuestros servicios:
+
+![](images/lm13.png)
+
 
 **7. Instalar y configurar Filebeat para Apache**
 
-Instalar Filebeat
+- Instalar Filebeat
 
 ```bash
-apt install filebeat -y
+sudo apt install filebeat -y
 ```
 
-Habilitar el módulo de Apache en Filebeat
+- Habilitar el módulo de Apache en Filebeat
 
 ```bash
-filebeat modules enable apache
+sudo filebeat modules enable apache
 ```
 
-Editar la configuración de Filebeat
+- Editar la configuración de Filebeat
 
 ```bash
-nano /etc/filebeat/filebeat.yml
+sudo nano /etc/filebeat/filebeat.yml
 ```
 
-Modificar la salida a Elasticsearch
+- Comprobar los datos de la salida a Elasticsearch:
 
+```
 output.elasticsearch:
 hosts: ["localhost:9200"]
+```
+![](images/lm14.png)
 
-Reiniciar Filebeat
+- Reiniciar Filebeat
 
 ```bash
-systemctl restart filebeat
+sudo systemctl restart filebeat
 ```
 Editar el archivo de configuración del módulo Apache:
 
 ```bash
-nano /etc/filebeat/modules.d/apache.yml
+sudo nano /etc/filebeat/modules.d/apache.yml
 ```
 
 Cambia enabled: false a enabled: true en ambas secciones y añade las var.paths:
 ```
 access:
 	enabled: true
-	var.paths: ["/var/log/apache2/other_vhosts_access.log*"]
+         #OJO¡¡¡ ponemos el directorio de logs... si estamos con escenario contenedor, estarán en la carpeta donde tenemos
+	#var.paths: ["/var/log/apache2/other_vhosts_access.log*"]
+	var.paths: ["/ruta/a/logs/logs/apache2/other_vhosts_access.log*"]
 error:
 	enabled: true
-	var.paths: ["/var/log/apache2/error.log*"]
+	#var.paths: ["/var/log/apache2/error.log*"]
+	var.paths: ["/ruta/a/carpeta/logs/logs/apache2/error.log*"]
 ```
 Configurar Filebeat para recolectar logs de Apache
 

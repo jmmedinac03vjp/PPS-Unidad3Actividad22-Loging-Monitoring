@@ -99,7 +99,6 @@ Ejemplo de un log en formato `combined`:
 
 `192.168.1.10 - - [28/Feb/2025:12:34:56 +0000] "GET /index.html HTTP/1.1" 200 1024 "https://ejemplo.com" "Mozilla/5.0"`
 
-![](images/lm2.png)
 
 Ejemplo de un log en formato `json`:
 
@@ -122,7 +121,7 @@ service apache2 restart
 
 Como estamos trabajando con un escenario multicontenedor docker, hay algunas peculiaridades. Por ejemplo, parte de los logs se guardan en el archivo `other_vhosts_access.log` en vez de `access.log`. Si las consultas no dan resultados prueba con `access.log`.
 
-**Monitorear logs en tiempo real con `tail -f`:*
+**Monitorear logs en tiempo real con `tail -f`:**
 
 ```bash
 tail -f /var/log/apache2/other_vhosts_access.log
@@ -160,7 +159,7 @@ grep "cmd=" /var/log/apache2/other_vhosts_access.log
 
 **Buscar todas las peticiones de un usuario específico (IP)**
 
-Si se quiere revisar todas las solicitudes realizadas por una IP sospechosa (ej. 172.20.0.5:
+Si se quiere revisar todas las solicitudes realizadas por una IP sospechosa (ej. 172.20.0.5):
 
 ```bash
 grep "172.20.0.5" /var/log/apache2/other_vhosts_access.log
@@ -216,7 +215,6 @@ awk '{print $1}' /var/log/apache2/other_vhosts_access.log | sort | uniq -c | sor
 
 Esto mostrará las 10 IPs con más solicitudes.
 
-grep "192.168.1.100" /var/log/apache2/other_vhosts_access.log
 
 ![](images/lm7.png)
 
@@ -253,7 +251,7 @@ Implementar medidas de seguridad adecuadas puede ayudar a prevenir ataques y mej
 Fail2Ban es una herramienta que monitorea los logs en busca de patrones sospechosos (como múltiples intentos fallidos de login) y bloquea automáticamente la IP atacante mediante reglas de firewall.
 
 
-###. Instalación de Fail2Ban (Ubuntu/Debian) en maquina anfitriona**
+###. Instalación de Fail2Ban (Ubuntu/Debian) en maquina anfitriona
 
 En esta ocasión, vamos a instalar `fail2ban` en nuestra **máquina anfitriona** en vez de  en docker. De esta manera también podrá monitorizar las conexiones `ssh`. 
 
@@ -304,9 +302,7 @@ sudo systemctl enable fail2ban
 
 Este documento describe cómo integrar **Fail2Ban** como un contenedor independiente dentro de un entorno **LAMP** desplegado con Docker Compose. Se utilizará la imagen oficial `linuxserver/fail2ban` y se conectará con los logs de Apache, MySQL, etc.
 
----
-
-** 1. Requisitos previos**
+**1. Requisitos previos**
 
 * Docker y Docker Compose instalados.
 * Estructura típica de proyecto LAMP en directorios:
@@ -316,9 +312,8 @@ Este documento describe cómo integrar **Fail2Ban** como un contenedor independi
   * `./logs/xdebug`
   * `./config/fail2ban/` (donde guardaremos la configuración de Fail2Ban)
 
----
 
-** 2. `docker-compose.yml`**
+**2. `docker-compose.yml`**
 
 ```yaml
 version: "3"
@@ -418,7 +413,7 @@ services:
 
 ---
 
-** 3. Configuración de Fail2Ban**
+**3. Configuración de Fail2Ban**
 
  - `config/fail2ban/jail.local`
 
@@ -449,7 +444,7 @@ ignoreregex =
 
 ---
 
-** 4. Instrucciones de uso**
+**4. Instrucciones de uso**
 
 1. Crea las carpetas necesarias si no existen:
 
@@ -471,18 +466,16 @@ docker-compose up -d
 docker logs -f <nombre_contenedor_fail2ban>
 ```
 
----
 
-** 5. Resultado esperado**
+**5. Resultado esperado**
 
 Fail2Ban monitoreará los logs de Apache y aplicará bans (bloqueos) a IPs que generen repetidos intentos fallidos de autenticación.
 
----
 
 
 ### Funcionamiento fail2ban
 
-** Ver las IPs bloqueadas**
+**Ver las IPs bloqueadas**
 
 ```bash
 sudo fail2ban-client status apache-auth
@@ -524,14 +517,16 @@ Un SIEM recopila, analiza y correlaciona eventos de seguridad desde múltiples f
 
 
 | **SIEM Populares** |
-|-------------------------------------------------------|----------------------------------------------------------------------------------|
-| **Herramienta**					|**Descripción**
-|-------------------------------------------------------|-----------------------------------------------------------------------------------|
+|-------------------------------------------------------|-------------------------------------------------------------------------|
+| **Herramienta**					|**Descripción**                                                          |
+|-------------------------------------------------------|-------------------------------------------------------------------------|
 |**ELK Stack** (Elasticsearch, Logstash, Kibana) 	|Sistema Open Source para recolectar y visualizar logs. Ideal para Apache.|
 |**Splunk**						|Potente solución comercial para análisis de eventos de seguridad.|
 |**Wazuh**						|SIEM gratuito basado en OSSEC con integración en Elasticsearch.|
 |**Graylog**						|Alternativa de código abierto con buenas capacidades de análisis.|
-|--------------------------------------------------------|---------------------------------------------------------------------------------------|
+
+
+---
 
 ## Configurar ELK Stack para Apache**
 
@@ -790,19 +785,17 @@ Si todo está configurado correctamente ir a la sección **Analytics → Discove
 
 ---
 
-## ⚠️   Volver a dejar todo "niquelao"
+# ⚠️   Volver a dejar todo "niquelao"
 
 Para eliminar los cambios que hemos realizado en esta actividad y volver a dejar todo en su sitio de partida:
 
 **En nuestro equipo anfitrión** 
 
 ```bash
-sudo systemctl disable fail2ban
-sudo apt remove fail2ban
-sudo rm -rf /etc/fail2ban
+sudo apt remove --purge fail2ban elasticsearch logstash kibana filebeat -y
 ```
 
-##Resumen
+# Resumen
 
 - Fail2Ban es una excelente primera línea de defensa contra ataques automatizados.
 

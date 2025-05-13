@@ -528,7 +528,7 @@ Un SIEM recopila, analiza y correlaciona eventos de seguridad desde múltiples f
 
 ---
 
-## Configurar ELK Stack para Apache**
+## Configurar ELK Stack para Apache
 
 ELK Stack (Elasticsearch, Logstash, Kibana) es una solución poderosa para monitoreo y análisis de logs en tiempo real. Integrarlo con Apache permite visualizar métricas de tráfico, detectar anomalías y mejorar la seguridad.
 
@@ -566,7 +566,6 @@ sudo apt install elasticsearch logstash kibana -y
 Como estamos en docker, iniciamos los servicios para probar. Tendríamos que habilitarlos para que en el arranque lo hagan automáticamente.
 ```bash
 systemctl enable --now elasticsearch logstash kibana
-
 ```
 
 **4. Configurar Elasticsearch**

@@ -517,7 +517,7 @@ Un SIEM recopila, analiza y correlaciona eventos de seguridad desde múltiples f
 
 
  **SIEM Populares** 
-|-------------------------------------------------------|-------------------------------------------------------------------------|
+
 | **Herramienta**					|**Descripción**                                                          |
 |-------------------------------------------------------|-------------------------------------------------------------------------|
 |**ELK Stack** (Elasticsearch, Logstash, Kibana) 	|Sistema Open Source para recolectar y visualizar logs. Ideal para Apache.|
